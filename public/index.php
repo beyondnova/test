@@ -52,6 +52,8 @@ $router->get('/bookings', 'BookingController@index');
 $router->get('/bookings/create', 'BookingController@create');
 $router->post('/bookings', 'BookingController@store');
 $router->get('/bookings/{id}', 'BookingController@show');
+$router->get('/bookings/{id}/edit', 'BookingController@edit');
+$router->post('/bookings/{id}/update', 'BookingController@update');
 $router->post('/bookings/{id}/check-in', 'BookingController@checkIn');
 $router->post('/bookings/{id}/check-out', 'BookingController@checkOut');
 $router->post('/bookings/{id}/cancel', 'BookingController@cancel');
@@ -60,8 +62,23 @@ $router->post('/bookings/{id}/cancel', 'BookingController@cancel');
 $router->get('/invoices', 'InvoiceController@index');
 $router->get('/invoices/{id}', 'InvoiceController@show');
 $router->post('/invoices/{id}/update', 'InvoiceController@update');
+$router->post('/invoices/{id}/items', 'InvoiceController@addItem');
+$router->post('/invoices/{id}/items/{item_id}/delete', 'InvoiceController@deleteItem');
 $router->post('/invoices/{id}/pay', 'InvoiceController@pay');
 $router->post('/invoices/{id}/payments/{payment_id}/delete', 'InvoiceController@deletePayment');
+
+// Calendar
+$router->get('/calendar', 'CalendarController@index');
+
+// Profile
+$router->get('/profile', 'ProfileController@show');
+$router->post('/profile', 'ProfileController@update');
+$router->post('/profile/password', 'ProfileController@password');
+
+// Exports
+$router->get('/export/bookings.csv', 'ExportController@bookings');
+$router->get('/export/invoices.csv', 'ExportController@invoices');
+$router->get('/export/payments.csv', 'ExportController@payments');
 
 // Staff
 $router->get('/staff', 'StaffController@index');

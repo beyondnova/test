@@ -32,7 +32,7 @@
       <tr><th style="width:160px">Room charges</th><td class="right"><?= money((float) $invoice['room_charge']) ?></td></tr>
       <tr><th>Extra charges</th><td class="right"><?= money((float) $invoice['extra_charges']) ?></td></tr>
       <tr><th>Discount</th><td class="right" style="color:#16a34a">-<?= money((float) $invoice['discount']) ?></td></tr>
-      <tr><th>Tax</th><td class="right"><?= money((float) $invoice['tax']) ?></td></tr>
+      <tr><th>Tax (<?= e((string) $taxRate) ?>%)</th><td class="right"><?= money((float) $invoice['tax']) ?></td></tr>
       <tr><th><strong>Total</strong></th><td class="right"><strong style="font-size:18px"><?= money((float) $invoice['total']) ?></strong></td></tr>
       <tr><th>Paid</th><td class="right" style="color:#16a34a"><?= money((float) $invoice['paid_amount']) ?></td></tr>
       <tr><th><strong>Balance</strong></th><td class="right"><strong style="font-size:18px;color:<?= $balance>0?'#dc2626':'#16a34a' ?>"><?= money($balance) ?></strong></td></tr>
@@ -44,16 +44,55 @@
   </div>
 </div>
 
+<div class="card" style="margin-top:18px">
+  <h3>Line Items (Extras)</h3>
+  <?php if (!$items): ?>
+    <div class="muted" style="margin-bottom:12px">No extras yet. Add mini-bar, laundry, room service, etc. below.</div>
+  <?php else: ?>
+  <table style="margin-bottom:14px">
+    <thead><tr><th>Description</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">Amount</th><th></th></tr></thead>
+    <tbody>
+    <?php foreach ($items as $it): ?>
+      <tr>
+        <td><?= e($it['description']) ?></td>
+        <td class="right"><?= rtrim(rtrim(number_format((float) $it['quantity'], 2), '0'), '.') ?></td>
+        <td class="right"><?= money((float) $it['unit_price']) ?></td>
+        <td class="right"><strong><?= money((float) $it['amount']) ?></strong></td>
+        <td class="right">
+          <?php if ($invoice['status'] !== 'cancelled'): ?>
+            <form method="post" action="/invoices/<?= (int) $invoice['id'] ?>/items/<?= (int) $it['id'] ?>/delete" onsubmit="return confirm('Remove this line item?')">
+              <?= csrf_field() ?><button class="btn btn-sm btn-danger">Remove</button>
+            </form>
+          <?php endif; ?>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php endif; ?>
+
+  <?php if ($invoice['status'] !== 'cancelled'): ?>
+  <form method="post" action="/invoices/<?= (int) $invoice['id'] ?>/items">
+    <?= csrf_field() ?>
+    <div class="grid" style="grid-template-columns: 2fr 1fr 1fr auto; gap:10px; align-items:end">
+      <div class="row" style="margin:0"><label>Description</label><input type="text" name="description" placeholder="e.g. Mini bar, Laundry, Room service" required></div>
+      <div class="row" style="margin:0"><label>Qty</label><input type="number" step="0.01" min="0.01" name="quantity" value="1" required></div>
+      <div class="row" style="margin:0"><label>Unit price ($)</label><input type="number" step="0.01" min="0" name="unit_price" value="0" required></div>
+      <button class="btn btn-primary">Add Item</button>
+    </div>
+  </form>
+  <?php endif; ?>
+</div>
+
 <?php if ($invoice['status'] !== 'cancelled'): ?>
 <div class="grid grid-2" style="margin-top:18px">
   <div class="card">
-    <h3>Adjust Charges</h3>
+    <h3>Adjust Discount &amp; Tax</h3>
     <form method="post" action="/invoices/<?= (int) $invoice['id'] ?>/update">
       <?= csrf_field() ?>
       <div class="grid grid-2">
-        <div class="row"><label>Extra charges ($)</label><input type="number" step="0.01" min="0" name="extra_charges" value="<?= e((string) $invoice['extra_charges']) ?>"></div>
         <div class="row"><label>Discount ($)</label><input type="number" step="0.01" min="0" name="discount" value="<?= e((string) $invoice['discount']) ?>"></div>
-        <div class="row"><label>Tax rate (%)</label><input type="number" step="0.01" min="0" max="100" name="tax_rate" value="<?= e((string) round((float) $invoice['tax'] / max(0.01, (float) $invoice['room_charge'] + (float) $invoice['extra_charges'] - (float) $invoice['discount']) * 100, 2)) ?>"></div>
+        <div class="row"><label>Tax rate (%)</label><input type="number" step="0.01" min="0" max="100" name="tax_rate" value="<?= e((string) $taxRate) ?>"></div>
       </div>
       <button class="btn btn-primary">Recalculate</button>
     </form>

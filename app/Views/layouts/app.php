@@ -85,6 +85,7 @@ input:focus, select:focus, textarea:focus { outline:0; border-color:var(--accent
       <a href="/" class="<?= active('/') ?>"><span>Dashboard</span></a>
       <div class="group">Operations</div>
       <a href="/bookings" class="<?= active('/bookings') ?>"><span>Bookings</span></a>
+      <a href="/calendar" class="<?= active('/calendar') ?>"><span>Calendar</span></a>
       <a href="/clients" class="<?= active('/clients') ?>"><span>Clients</span></a>
       <a href="/invoices" class="<?= active('/invoices') ?>"><span>Invoices</span></a>
       <a href="/rooms" class="<?= active('/rooms') ?>"><span>Rooms</span></a>
@@ -94,6 +95,7 @@ input:focus, select:focus, textarea:focus { outline:0; border-color:var(--accent
         <a href="/reports" class="<?= active('/reports') ?>"><span>Reports</span></a>
       <?php endif; ?>
       <div class="group">Account</div>
+      <a href="/profile" class="<?= active('/profile') ?>"><span>My Profile</span></a>
       <a href="/logout"><span>Logout</span></a>
     </nav>
   </aside>

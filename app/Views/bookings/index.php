@@ -1,6 +1,9 @@
 <div class="topbar">
   <h2>Bookings</h2>
-  <a href="/bookings/create" class="btn btn-primary">+ New Booking</a>
+  <div class="actions">
+    <a href="/export/bookings.csv" class="btn">Export CSV</a>
+    <a href="/bookings/create" class="btn btn-primary">+ New Booking</a>
+  </div>
 </div>
 
 <div class="card">

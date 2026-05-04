@@ -97,6 +97,80 @@ class BookingController
         redirect('/bookings/' . $bid);
     }
 
+    public function edit(array $p): void
+    {
+        Auth::require();
+        $booking = Db::one('SELECT * FROM bookings WHERE id = ?', [(int) $p['id']]);
+        if (!$booking) { http_response_code(404); echo 'Not found'; return; }
+        if (in_array($booking['status'], ['checked_out', 'cancelled'], true)) {
+            flash('error', 'Completed or cancelled bookings cannot be edited.');
+            redirect('/bookings/' . (int) $booking['id']);
+        }
+        $clients = Db::all('SELECT id, name FROM clients ORDER BY name');
+        $rooms = Db::all("SELECT id, number, type, rate FROM rooms WHERE status != 'maintenance' OR id = ? ORDER BY number", [$booking['room_id']]);
+        $title = 'Edit Booking #' . $booking['id'];
+        view('bookings/edit', compact('title', 'booking', 'clients', 'rooms'));
+    }
+
+    public function update(array $p): void
+    {
+        Auth::require();
+        csrf_check();
+        $booking = Db::one('SELECT * FROM bookings WHERE id = ?', [(int) $p['id']]);
+        if (!$booking) { flash('error', 'Not found.'); redirect('/bookings'); }
+        if (in_array($booking['status'], ['checked_out', 'cancelled'], true)) {
+            flash('error', 'Cannot edit a completed booking.');
+            back();
+        }
+
+        $data = $this->validate();
+        $room = Db::one('SELECT * FROM rooms WHERE id = ?', [$data['room_id']]);
+        if (!$room) { flash('error', 'Room not found.'); back(); }
+
+        $overlap = (int) Db::scalar(
+            "SELECT COUNT(*) FROM bookings
+             WHERE id != ? AND room_id = ? AND status IN ('booked','checked_in')
+             AND NOT (date(check_out) <= date(?) OR date(check_in) >= date(?))",
+            [$booking['id'], $data['room_id'], $data['check_in'], $data['check_out']]
+        );
+        if ($overlap > 0) {
+            flash('error', 'Room is already booked for those dates.');
+            back();
+        }
+
+        $nights = nights_between($data['check_in'], $data['check_out']);
+        $rate = (float) $room['rate'];
+        Db::q(
+            'UPDATE bookings SET client_id=?, room_id=?, check_in=?, check_out=?, nights=?, rate=?, notes=? WHERE id=?',
+            [$data['client_id'], $data['room_id'], $data['check_in'], $data['check_out'], $nights, $rate, $data['notes'], $booking['id']]
+        );
+
+        if ($booking['status'] === 'checked_in' && (int) $booking['room_id'] !== (int) $data['room_id']) {
+            Db::q("UPDATE rooms SET status='available' WHERE id=?", [$booking['room_id']]);
+            Db::q("UPDATE rooms SET status='occupied' WHERE id=?", [$data['room_id']]);
+        }
+
+        $invoice = Db::one('SELECT * FROM invoices WHERE booking_id = ?', [$booking['id']]);
+        if ($invoice && $invoice['status'] !== 'cancelled') {
+            $newRoomCharge = round($nights * $rate, 2);
+            $extras = (float) (Db::scalar('SELECT COALESCE(SUM(amount), 0) FROM invoice_items WHERE invoice_id = ?', [$invoice['id']]) ?? 0);
+            $base = max(0, $newRoomCharge + $extras - (float) $invoice['discount']);
+            $rate10 = (float) $invoice['room_charge'] + (float) $invoice['extra_charges'] - (float) $invoice['discount'];
+            $taxRate = $rate10 > 0 ? round((float) $invoice['tax'] / $rate10 * 100, 2) : 10.0;
+            $tax = round($base * ($taxRate / 100), 2);
+            $total = round($base + $tax, 2);
+            $paid = (float) $invoice['paid_amount'];
+            $status = $paid <= 0 ? 'pending' : ($paid >= $total - 0.001 ? 'paid' : 'partial');
+            Db::q(
+                'UPDATE invoices SET room_charge=?, extra_charges=?, tax=?, total=?, status=? WHERE id=?',
+                [$newRoomCharge, $extras, $tax, $total, $status, $invoice['id']]
+            );
+        }
+
+        flash('success', 'Booking updated.');
+        redirect('/bookings/' . (int) $booking['id']);
+    }
+
     public function checkIn(array $p): void
     {
         Auth::require();

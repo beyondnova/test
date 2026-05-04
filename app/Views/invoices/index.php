@@ -1,4 +1,12 @@
-<div class="topbar"><h2>Invoices</h2></div>
+<div class="topbar">
+  <h2>Invoices</h2>
+  <div class="actions">
+    <a href="/export/invoices.csv" class="btn">Export Invoices CSV</a>
+    <?php if (Auth::isAdmin()): ?>
+      <a href="/export/payments.csv" class="btn">Export Payments CSV</a>
+    <?php endif; ?>
+  </div>
+</div>
 
 <div class="card">
   <form method="get" action="/invoices" style="margin-bottom:14px">

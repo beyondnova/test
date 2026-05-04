@@ -1,6 +1,9 @@
 <div class="topbar">
   <h2>Booking #<?= (int) $booking['id'] ?></h2>
   <div class="actions">
+    <?php if (!in_array($booking['status'], ['checked_out','cancelled'], true)): ?>
+      <a class="btn" href="/bookings/<?= (int) $booking['id'] ?>/edit">Edit</a>
+    <?php endif; ?>
     <?php if ($booking['status'] === 'booked'): ?>
       <form method="post" action="/bookings/<?= (int) $booking['id'] ?>/check-in" style="display:inline">
         <?= csrf_field() ?><button class="btn btn-success">Check In</button>
